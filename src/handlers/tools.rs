@@ -152,9 +152,7 @@ impl ToolHandlers {
                     .await
             }
             "create_transfer" => self.transfer_handlers.create_transfer(arguments).await,
-            "set_category_budget" => {
-                self.budget_handlers.set_category_budget(arguments).await
-            }
+            "set_category_budget" => self.budget_handlers.set_category_budget(arguments).await,
             "analyze_transactions" => self
                 .analysis_handlers
                 .analyze_transactions(arguments)
@@ -370,9 +368,7 @@ mod tests {
             "budgeted_amount": "100.00"
         });
 
-        let result = handlers
-            .handle_tool_call("set_category_budget", args)
-            .await;
+        let result = handlers.handle_tool_call("set_category_budget", args).await;
         // In read-only mode, write operations should fail
         assert!(result.is_err());
     }
