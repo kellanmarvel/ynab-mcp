@@ -175,13 +175,28 @@ jobs:
         CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -n1 | sed 's/version = "\(.*\)"/\1/')
         TAG_VERSION=${{ github.ref_name }}
         TAG_VERSION=${TAG_VERSION#v}  # Remove 'v' prefix
-        
+
         if [ "$CARGO_VERSION" != "$TAG_VERSION" ]; then
           echo "❌ Version mismatch: Cargo.toml has $CARGO_VERSION but tag is $TAG_VERSION"
           exit 1
         fi
-        
+
         echo "✅ Version matches: $CARGO_VERSION"
+
+    - name: Update Cargo.lock if needed
+      run: |
+        TAG_VERSION=${{ github.ref_name }}
+        TAG_VERSION=${TAG_VERSION#v}  # Remove 'v' prefix
+
+        # Update Cargo.lock to reflect any version changes
+        cargo update --package ynab-mcp --precise $TAG_VERSION
+
+        # Check if Cargo.lock was modified
+        if ! git diff --quiet Cargo.lock; then
+          echo "📝 Cargo.lock was updated"
+        else
+          echo "✅ Cargo.lock is already up to date"
+        fi
 
     - name: Run tests before publishing
       run: cargo test --verbose --lib
