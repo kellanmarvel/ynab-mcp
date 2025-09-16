@@ -41,8 +41,6 @@ secrecy = { version = "0.10.3", features = ["serde"] }
 clap = { version = "4.5.47", features = ["derive"] }
 zeroize = { version = "1.8.1", features = ["derive"] }
 
-# Plugin system
-async-trait = "0.1"
 
 # High-performance concurrent hashmap for cache
 dashmap = "6.1"
@@ -51,7 +49,7 @@ dashmap = "6.1"
 # Testing framework
 tokio-test = "0.4"
 mockito = "1.4"
-wiremock = "0.5"
+wiremock = "0.6"
 assert_matches = "1.5"
 tempfile = "3.8"
 serial_test = "3.0"
