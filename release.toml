@@ -1,4 +1,3 @@
-[package]
 # Don't push tags (let GitHub Actions handle releases)
 push = false
 # Don't publish to crates.io here (let GitHub Actions do it)
@@ -7,7 +6,7 @@ publish = false
 pre-release-hook = ["cargo", "test", "--lib"]
 # Consolidate version bump and dependency updates into single commit
 consolidate-commits = true
-
-[package.metadata.release]
-pre-release-commit-message = "chore: release version {{version}}"
-tag-message = "v{{version}}"
+# Custom commit message
+pre-release-commit-message = "chore: release version {{{version}}}"
+# Tag message
+tag-message = "v{{{version}}}"
