@@ -1,0 +1,55 @@
+# Target directory (built artifacts)
+/target
+
+# Cargo lock file - needed for reproducible builds
+# Cargo.lock
+
+# Git directory
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test artifacts
+test-results/
+coverage/
+
+# Docker files (avoid recursion)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Development files
+.env
+.env.local
+.env.example
+
+# Claude session files
+.claude*
+session-log.md
+troubleshooting_log.md
+architecture_refactor_status.md
+claude_code_bug_report.md
+
+# Temporary files
+*.tmp
+*.temp

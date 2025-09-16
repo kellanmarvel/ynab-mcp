@@ -1,0 +1,173 @@
+name: Security Audit
+
+on:
+  schedule:
+    # Run security audit every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+
+jobs:
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Cache Cargo
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: security-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          security-cargo-
+
+    - name: Install cargo-audit
+      run: cargo install --force cargo-audit
+
+    - name: Run cargo audit
+      run: cargo audit --json > audit-results.json
+      continue-on-error: true
+
+    - name: Upload audit results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-audit-results
+        path: audit-results.json
+
+    - name: Run cargo audit (fail on vulnerabilities)
+      run: cargo audit
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v4
+      with:
+        fail-on-severity: moderate
+        comment-summary-in-pr: true
+
+  secrets-scan:
+    name: Scan for Secrets
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Run Trivy secret scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-secrets.sarif'
+        scanners: 'secret'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-secrets.sarif'
+
+  financial-security-check:
+    name: Financial Security Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Cache Cargo
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: security-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Run financial security tests
+      run: cargo test --verbose --test security_token_test
+      env:
+        YNAB_API_TOKEN: "test-token"
+        YNAB_BLOCK_TEST_TOKENS: "false"
+        READ_ONLY_MODE: "true"
+
+    - name: Check for hardcoded secrets in source
+      run: |
+        echo "Checking for potential hardcoded secrets..."
+        
+        # Use a more sophisticated approach to detect hardcoded secrets outside of test contexts
+        find src/ -name "*.rs" -not -path "*/test*" | while read -r file; do
+          # Skip if this file is clearly a test file based on content
+          if grep -q -E "(#\[cfg\(test\)\]|mod tests|#\[test\])" "$file"; then
+            echo "Skipping test file: $file"
+            continue
+          fi
+          
+          # Look for suspicious hardcoded tokens in non-test files
+          if grep -n "YnabApiToken::new.*[\"'][^\"']*[\"']" "$file" | grep -v -E "(test|example|valid|dummy|fake|mock)" | grep -E "[\"'][A-Za-z0-9_-]{15,}[\"']"; then
+            echo "⚠️  Found potential hardcoded YNAB credentials in $file"
+            exit 1
+          fi
+        done
+        
+        # Look for hardcoded API keys (excluding test patterns)  
+        if find src/ -name "*.rs" -not -path "*/test*" -exec grep -H "api_key.*=" {} \; | grep -v -E "(test|example|mock|fake|dummy)"; then
+          echo "⚠️  Found potential hardcoded API keys"
+          exit 1
+        fi
+        
+        echo "✅ No obvious hardcoded secrets found"
+
+    - name: Verify token handling security
+      run: |
+        echo "Verifying secure token handling practices..."
+        # Check that we're using secrecy crate properly
+        if ! grep -r "use secrecy::" src/ --include="*.rs" > /dev/null; then
+          echo "⚠️  secrecy crate should be used for token handling"
+          exit 1
+        fi
+        
+        # Check for proper zeroization
+        if ! grep -r "Zeroize" src/ --include="*.rs" > /dev/null; then
+          echo "⚠️  Zeroize should be used for sensitive data cleanup"
+          exit 1
+        fi
+        
+        echo "✅ Token security measures in place"

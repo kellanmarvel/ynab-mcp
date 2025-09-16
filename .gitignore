@@ -1,0 +1,97 @@
+# Rust build artifacts
+/target/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.bak
+*.tmp
+
+# Environment files (tokens now use keyring)
+.env
+.env.local
+.env.production
+
+# Test artifacts and coverage
+/coverage/
+
+# Session and recovery files
+.claude-recovery.md
+.claude-session-start
+session-log.md
+
+# Development scripts (use quick_test.sh instead)
+test_*.py
+test_*.sh
+dev_*.sh
+assign_*.sh
+
+# Additional development script patterns
+dev.sh
+dev_setup.sh
+dev_watch.sh
+*_setup.sh
+*_watch.sh
+
+# Old config files
+mcp_config*.json
+mcp_config_template.json
+
+# Personal MCP configuration files (user-specific)
+.mcp.json
+*.mcp.json
+
+# Template directories (if regenerated)
+src/templates/
+
+# IDE settings
+/.claude/
+
+# Rust toolchain configuration files (use project defaults)
+rustfmt.toml
+.clippy.toml
+deny.toml
+
+# Development environment examples
+.env.example
+
+# Generated documentation and reports
+coverage*.md
+architecture_refactor_status.md
+troubleshooting_log.md
+
+# Temporary markdown files (often generated during development)
+ARCHITECTURE_*.md
+BATCH_*.md
+CODE_*.md
+ISSUES.md
+OPERATION_*.md
+PLAN.md
+PROGRESS_*.md
+STREAMING_*.md
+
+# HTML templates (if regenerated from source)
+src/templates/*.html
+
+# Sensitive data files
+account_pre_check.json
+categories_response.json
+*.json
+!package.json
+!Cargo.json
+!**/config.json

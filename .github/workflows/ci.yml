@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        rust: [stable, 1.82.0]  # MSRV - removed beta for CI stability
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ matrix.rust }}
+        components: rustfmt, clippy
+
+    - name: Cache Cargo registry
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-${{ matrix.rust }}-
+          ${{ runner.os }}-cargo-
+
+    - name: Check formatting
+      run: cargo fmt --all -- --check
+      if: matrix.rust == 'stable' && matrix.os == 'ubuntu-latest'
+
+    - name: Run clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+      if: matrix.rust == 'stable'
+
+    - name: Build
+      run: cargo build --verbose --all-features
+
+    - name: Run unit tests
+      run: cargo test --verbose --lib
+      env:
+        YNAB_API_TOKEN: "test-token"
+        YNAB_BLOCK_TEST_TOKENS: "false"
+        READ_ONLY_MODE: "true"
+
+    - name: Run integration tests (environment isolated)
+      run: |
+        cargo test --verbose --test integration_test
+        cargo test --verbose --test cli_commands_test  
+        cargo test --verbose --test e2e_mock_test
+      env:
+        YNAB_API_TOKEN: "test-token"
+        YNAB_BLOCK_TEST_TOKENS: "false"
+        READ_ONLY_MODE: "true"
+      if: matrix.rust == 'stable' && matrix.os == 'ubuntu-latest'
+
+    # Integration tests run separately to avoid state interference
+    # E2E tests pass individually but may fail when run with all tests due to timing/state issues
+
+    - name: Test release build
+      run: cargo build --release --verbose
+      if: matrix.rust == 'stable'
+
+  minimum-supported-rust-version:
+    name: MSRV Check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install MSRV Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: 1.82.0
+
+    - name: Cache Cargo
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: msrv-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Check MSRV build
+      run: cargo check --all-features
+
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Cache Cargo
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: coverage-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          coverage-cargo-
+
+    - name: Install cargo-tarpaulin
+      run: cargo install cargo-tarpaulin
+
+    - name: Generate coverage report
+      run: |
+        cargo tarpaulin \
+          --lib \
+          --timeout 120 \
+          --exclude-files 'src/main.rs' \
+          --out xml \
+          --output-dir ./coverage
+      env:
+        YNAB_API_TOKEN: "test-token"
+        YNAB_BLOCK_TEST_TOKENS: "false"
+        READ_ONLY_MODE: "true"
+
+    - name: Show coverage summary
+      run: |
+        COVERAGE=$(cargo tarpaulin \
+          --lib \
+          --timeout 120 \
+          --exclude-files 'src/main.rs' \
+          --print-summary 2>/dev/null | \
+          grep -o '[0-9]\+\.[0-9]\+% coverage' | \
+          grep -o '[0-9]\+\.[0-9]\+' || echo "0.0")
+        
+        echo "📊 Current coverage: ${COVERAGE}%"
+        echo "🎯 Target coverage: 75%"
+        echo "📈 Progress: $(echo "scale=1; $COVERAGE * 100 / 75" | bc -l)% toward target"
+      env:
+        YNAB_API_TOKEN: "test-token"
+        YNAB_BLOCK_TEST_TOKENS: "false"
+        READ_ONLY_MODE: "true"
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage/cobertura.xml
+        flags: unit
+        name: codecov-umbrella
+        fail_ci_if_error: false
+        verbose: true

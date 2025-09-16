@@ -1,0 +1,35 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 2%
+        if_ci_failed: error
+    patch:
+      default:
+        target: 75%
+        threshold: 5%
+        if_ci_failed: error
+
+  ignore:
+    - "tests/"           # Ignore test files themselves
+    - "examples/"        # Ignore example files
+    - "src/main.rs"      # Ignore main entry point (minimal logic)
+    - "target/"          # Ignore build artifacts
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: false
+
+github_checks:
+  annotations: true
+
+# Flag management for different test types
+flags:
+  unit:
+    paths:
+      - src/
+  integration:
+    paths:
+      - tests/

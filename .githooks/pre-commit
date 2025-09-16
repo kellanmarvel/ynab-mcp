@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# Pre-commit hook that enforces unit tests, clippy, and rustfmt checks
+# This hook will prevent commits if any of these checks fail
+
+set -e
+
+echo "🔍 Running pre-commit checks..."
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_status() {
+    local color=$1
+    local message=$2
+    echo -e "${color}${message}${NC}"
+}
+
+# Function to run a check and handle failure
+run_check() {
+    local check_name=$1
+    local command=$2
+    
+    print_status $YELLOW "Running $check_name..."
+    
+    if eval "$command"; then
+        print_status $GREEN "✅ $check_name passed"
+    else
+        print_status $RED "❌ $check_name failed"
+        print_status $RED "Commit aborted. Please fix the issues and try again."
+        exit 1
+    fi
+}
+
+# Check if we're in a Rust project
+if [ ! -f "Cargo.toml" ]; then
+    print_status $RED "❌ Cargo.toml not found. This hook is designed for Rust projects."
+    exit 1
+fi
+
+echo ""
+print_status $YELLOW "🦀 Running Rust quality checks..."
+
+# 1. Check rustfmt formatting
+run_check "rustfmt formatting check" "cargo fmt -- --check"
+
+# 2. Run clippy lints
+run_check "clippy lints" "cargo clippy -- -D warnings"
+
+# 3. Run unit tests (with test environment variables for YNAB project)
+run_check "unit tests" "YNAB_API_TOKEN=\"test-token\" YNAB_BLOCK_TEST_TOKENS=\"false\" READ_ONLY_MODE=\"true\" cargo test --lib --quiet"
+
+echo ""
+print_status $GREEN "🎉 All pre-commit checks passed! Proceeding with commit..."
+echo ""

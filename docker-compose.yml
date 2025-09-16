@@ -1,0 +1,89 @@
+services:
+  ynab-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ynab-mcp:latest
+    container_name: ynab-mcp-server
+    
+    # Environment variables
+    environment:
+      # Required: Your YNAB API token
+      - YNAB_API_TOKEN=${YNAB_API_TOKEN:-}
+      
+      # Optional: Server configuration
+      - RUST_LOG=${RUST_LOG:-info}
+      - READ_ONLY_MODE=${READ_ONLY_MODE:-false}
+      - YNAB_BLOCK_TEST_TOKENS=${YNAB_BLOCK_TEST_TOKENS:-true}
+      
+      # Optional: HTTP client configuration
+      - YNAB_HTTP_TIMEOUT_SECS=${YNAB_HTTP_TIMEOUT_SECS:-30}
+      - YNAB_CONNECT_TIMEOUT_SECS=${YNAB_CONNECT_TIMEOUT_SECS:-10}
+      
+    # Resource limits for stability
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    
+    # Security settings
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    user: "1000:1000"
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Interactive mode for MCP stdin/stdout
+    stdin_open: true
+    tty: true
+    
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "echo '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"health_check\",\"arguments\":{}}}' | ynab-mcp > /dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  # Optional: Development service with volume mounts
+  ynab-mcp-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    image: ynab-mcp:dev
+    container_name: ynab-mcp-dev
+    profiles:
+      - dev
+    
+    environment:
+      - YNAB_API_TOKEN=${YNAB_API_TOKEN:-}
+      - RUST_LOG=debug
+      - READ_ONLY_MODE=true
+      - YNAB_BLOCK_TEST_TOKENS=false
+    
+    # Mount source for development
+    volumes:
+      - .:/app:ro
+      - cargo-cache:/usr/local/cargo/registry
+      - target-cache:/app/target
+    
+    # Override entrypoint for development
+    entrypoint: ["sh"]
+    command: ["-c", "while true; do sleep 3600; done"]
+    
+    stdin_open: true
+    tty: true
+
+# Named volumes for development caching
+volumes:
+  cargo-cache:
+    driver: local
+  target-cache:
+    driver: local
