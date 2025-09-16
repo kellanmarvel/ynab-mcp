@@ -25,6 +25,7 @@ This server enables natural language interactions with your YNAB budget, allowin
 - [Available Tools](#available-tools)
 - [Development](#development)
 - [Documentation](#documentation)
+- [Releases](RELEASES.md)
 
 ## Installation
 
