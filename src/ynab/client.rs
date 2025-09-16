@@ -451,20 +451,6 @@ impl YnabClient {
         Ok(response.data.accounts)
     }
 
-    #[allow(dead_code)]
-    pub async fn get_accounts_delta(
-        &self,
-        budget_id: &str,
-        server_knowledge: i64,
-    ) -> Result<(Vec<Account>, i64)> {
-        let endpoint = format!(
-            "budgets/{}/accounts?last_knowledge_of_server={}",
-            budget_id, server_knowledge
-        );
-        let response: ApiResponse<AccountsResponse> = self.get(&endpoint).await?;
-        Ok((response.data.accounts, response.data.server_knowledge))
-    }
-
     pub async fn get_account(&self, budget_id: &str, account_id: Uuid) -> Result<Account> {
         let endpoint = format!("budgets/{}/accounts/{}", budget_id, account_id);
         let response: ApiResponse<AccountResponse> = self.get(&endpoint).await?;
@@ -476,23 +462,6 @@ impl YnabClient {
         let endpoint = format!("budgets/{}/categories", budget_id);
         let response: ApiResponse<CategoriesResponse> = self.get(&endpoint).await?;
         Ok(response.data.category_groups)
-    }
-
-    #[allow(dead_code)]
-    pub async fn get_categories_delta(
-        &self,
-        budget_id: &str,
-        server_knowledge: i64,
-    ) -> Result<(Vec<CategoryGroup>, i64)> {
-        let endpoint = format!(
-            "budgets/{}/categories?last_knowledge_of_server={}",
-            budget_id, server_knowledge
-        );
-        let response: ApiResponse<CategoriesResponse> = self.get(&endpoint).await?;
-        Ok((
-            response.data.category_groups,
-            response.data.server_knowledge,
-        ))
     }
 
     pub async fn get_category(&self, budget_id: &str, category_id: Uuid) -> Result<Category> {
@@ -566,54 +535,6 @@ impl YnabClient {
         }
 
         Ok(transactions)
-    }
-
-    #[allow(dead_code)]
-    pub async fn get_transactions_with_filters(
-        &self,
-        budget_id: &str,
-        since_date: Option<&str>,
-        server_knowledge: Option<i64>,
-        limit: Option<u32>,
-    ) -> Result<(Vec<Transaction>, Option<i64>, bool)> {
-        let mut query_params = Vec::new();
-
-        if let Some(date) = since_date {
-            query_params.push(format!("since_date={}", date));
-        }
-
-        if let Some(knowledge) = server_knowledge {
-            query_params.push(format!("last_knowledge_of_server={}", knowledge));
-        }
-
-        if let Some(limit_val) = limit {
-            query_params.push(format!("limit={}", limit_val));
-        }
-
-        let endpoint = if query_params.is_empty() {
-            format!("budgets/{}/transactions", budget_id)
-        } else {
-            format!(
-                "budgets/{}/transactions?{}",
-                budget_id,
-                query_params.join("&")
-            )
-        };
-
-        let response: ApiResponse<TransactionsResponse> = self.get(&endpoint).await?;
-
-        // Check if we might have more data (if we got exactly the limit requested)
-        let has_more_data = if let Some(limit_val) = limit {
-            response.data.transactions.len() as u32 >= limit_val
-        } else {
-            false
-        };
-
-        Ok((
-            response.data.transactions,
-            Some(response.data.server_knowledge),
-            has_more_data,
-        ))
     }
 
     pub async fn get_transactions_paginated(

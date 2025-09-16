@@ -1,8 +1,6 @@
 use chrono::{DateTime, NaiveDate, Utc};
-use rust_decimal::{prelude::ToPrimitive, Decimal};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_json::Value;
-use std::str::FromStr;
+use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize, Serializer};
 use uuid::Uuid;
 
 // Custom serialization for amounts - converts milliunits to decimal currency amounts
@@ -25,47 +23,6 @@ where
             serializer.serialize_some(&decimal_amount.to_string())
         }
         None => serializer.serialize_none(),
-    }
-}
-
-// Custom deserialization for amounts - handles both milliunits (integers) and currency units (decimals/strings)
-#[allow(dead_code)]
-pub fn deserialize_amount<'de, D>(deserializer: D) -> Result<i64, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value = Value::deserialize(deserializer)?;
-
-    match value {
-        Value::Number(n) => {
-            if let Some(int_val) = n.as_i64() {
-                // If it's an integer, check if it looks like milliunits or currency units
-                if int_val.abs() >= 1000 || int_val == 0 {
-                    // Assume it's already in milliunits if >= 1000 or exactly 0
-                    Ok(int_val)
-                } else {
-                    // Small integers might be currency units, convert to milliunits
-                    Ok(int_val * 1000)
-                }
-            } else if let Some(float_val) = n.as_f64() {
-                // If it's a float, assume it's in currency units and convert to milliunits
-                Ok((float_val * 1000.0).round() as i64)
-            } else {
-                Err(serde::de::Error::custom("Invalid number format"))
-            }
-        }
-        Value::String(s) => {
-            // Parse string as decimal and convert to milliunits
-            let decimal = Decimal::from_str(&s)
-                .map_err(|_| serde::de::Error::custom(format!("Invalid decimal string: {}", s)))?;
-            let milliunits = (decimal * Decimal::from(1000)).round();
-            milliunits
-                .to_i64()
-                .ok_or_else(|| serde::de::Error::custom("Amount too large or small"))
-        }
-        _ => Err(serde::de::Error::custom(
-            "Amount must be a number or string",
-        )),
     }
 }
 

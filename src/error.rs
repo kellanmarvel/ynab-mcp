@@ -52,15 +52,6 @@ pub enum YnabMcpError {
         remediation: String,
     },
 
-    /// Resource not found errors with available alternatives
-    #[allow(dead_code)]
-    #[error("Resource not found: {resource_type} '{resource_id}' not found. {remediation}")]
-    NotFound {
-        resource_type: String,
-        resource_id: String,
-        remediation: String,
-    },
-
     /// Generic application errors (fallback)
     #[error("{0}")]
     Generic(String),
@@ -119,38 +110,9 @@ impl YnabMcpError {
         }
     }
 
-    /// Create a resource not found error with alternatives
-    #[allow(dead_code)]
-    pub fn not_found(resource_type: &str, resource_id: &str, remediation: &str) -> Self {
-        Self::NotFound {
-            resource_type: resource_type.to_string(),
-            resource_id: resource_id.to_string(),
-            remediation: remediation.to_string(),
-        }
-    }
-
     /// Create a generic error (fallback for compatibility)
     pub fn generic(msg: &str) -> Self {
         Self::Generic(msg.to_string())
-    }
-
-    // Legacy methods for backward compatibility
-    #[allow(dead_code)]
-    pub fn config_simple(msg: &str) -> Self {
-        Self::config(
-            msg,
-            "Check your configuration settings and environment variables",
-        )
-    }
-
-    #[allow(dead_code)]
-    pub fn validation_simple(msg: &str) -> Self {
-        Self::validation(
-            msg,
-            "unknown",
-            "valid value",
-            "Review the parameter requirements",
-        )
     }
 }
 
