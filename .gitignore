@@ -95,3 +95,4 @@ categories_response.json
 !package.json
 !Cargo.json
 !**/config.json
+/coverage/
