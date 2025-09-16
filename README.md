@@ -146,7 +146,7 @@ The server provides comprehensive YNAB integration through these tool categories
 - **get_transactions_by_date_range**: Query transactions within time periods
 
 ### Budget Operations
-- **assign_category_budget**: Allocate funds to budget categories
+- **set_category_budget**: Set exact budget amounts for categories
 - **create_transfer**: Transfer funds between accounts
 
 ### System Tools

@@ -76,7 +76,7 @@ Move money between accounts.
 
 ### Budget Management
 
-#### `assign_category_budget`
+#### `set_category_budget`
 Allocate money to a budget category.
 
 **Parameters:**

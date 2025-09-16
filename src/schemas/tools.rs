@@ -59,7 +59,7 @@ impl ToolSchemas {
     /// Budget management tools
     pub fn get_budget_tools() -> Vec<Value> {
         vec![
-            Self::assign_category_budget_schema(),
+            Self::set_category_budget_schema(),
         ]
     }
 
@@ -223,9 +223,9 @@ impl ToolSchemas {
         })
     }
 
-    pub fn assign_category_budget_schema() -> Value {
+    pub fn set_category_budget_schema() -> Value {
         serde_json::json!({
-            "name": "assign_category_budget",
+            "name": "set_category_budget",
             "description": "Assign money to a budget category for a specific month",
             "inputSchema": {
                 "type": "object",

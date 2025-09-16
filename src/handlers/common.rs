@@ -166,7 +166,7 @@ impl CommonUtils {
                 | "create_transfer"
                 | "approve_transaction"
                 | "clear_transaction"
-                | "assign_category_budget"
+                | "set_category_budget"
         )
     }
 

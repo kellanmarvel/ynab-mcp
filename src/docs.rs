@@ -199,7 +199,7 @@ impl ApiDocumentation {
                     "description": "Manage budget categories and assignments",
                     "tools": [
                         {
-                            "name": "assign_category_budget",
+                            "name": "set_category_budget",
                             "description": "Assign money to a budget category for a specific month",
                             "required_parameters": ["budget_id", "category_id", "budgeted_amount"],
                             "optional_parameters": ["month"],
@@ -768,7 +768,7 @@ impl ApiDocumentation {
             "advanced_workflows": {
                 "budget_optimization": {
                     "description": "Optimize budget allocations based on spending patterns",
-                    "tools_used": ["analyze_spending_by_category", "assign_category_budget"],
+                    "tools_used": ["analyze_spending_by_category", "set_category_budget"],
                     "workflow": [
                         "Analyze historical spending by category",
                         "Identify categories that are over/under budget",

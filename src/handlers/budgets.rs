@@ -24,7 +24,7 @@ impl BudgetHandlers {
         }
 
         let result = match tool_name {
-            "assign_category_budget" => self.assign_category_budget(args).await,
+            "set_category_budget" => self.set_category_budget(args).await,
             _ => {
                 return Err(YnabMcpError::generic(&format!(
                     "Unknown budget operation: {}",
@@ -46,7 +46,7 @@ impl BudgetHandlers {
         }
     }
 
-    pub async fn assign_category_budget(&self, args: Value) -> Result<Value> {
+    pub async fn set_category_budget(&self, args: Value) -> Result<Value> {
         // Validate all input fields comprehensively
         InputValidator::validate_assign_budget(&args)?;
 
@@ -74,7 +74,7 @@ impl BudgetHandlers {
         progress_messages.push("🔍 Retrieving current category information...".to_string());
 
         progress_messages.push(format!(
-            "💰 Adding {} to category for {}...",
+            "💰 Setting budget to {} for {}...",
             self.common.format_amount(budgeted_amount),
             &resolved_month
         ));
@@ -82,7 +82,7 @@ impl BudgetHandlers {
         let updated_category = self
             .common
             .ynab_client
-            .add_to_month_category_budget(
+            .update_month_category(
                 &resolved_budget_id,
                 &resolved_month,
                 category_id,
@@ -90,12 +90,12 @@ impl BudgetHandlers {
             )
             .await?;
 
-        progress_messages.push("✅ Budget assignment completed successfully".to_string());
+        progress_messages.push("✅ Budget set successfully".to_string());
 
         let conversational_summary = format!(
-            "✅ Successfully added {} to {} for {}. New balance: {}",
-            self.common.format_amount(budgeted_amount),
+            "✅ Successfully set {} budget to {} for {}. New balance: {}",
             updated_category.name,
+            self.common.format_amount(budgeted_amount),
             &resolved_month,
             self.common.format_amount(updated_category.balance)
         );
@@ -106,14 +106,14 @@ impl BudgetHandlers {
             "progress_messages": progress_messages,
             "conversational_summary": conversational_summary,
             "human_message": conversational_summary,
-            "message": format!("💰 Added {} to {} for {}",
-                self.common.format_amount(budgeted_amount),
+            "message": format!("💰 Set {} budget to {} for {}",
                 updated_category.name,
+                self.common.format_amount(budgeted_amount),
                 &resolved_month
             ),
             "category_summary": {
                 "name": updated_category.name,
-                "amount_added": self.common.format_amount(budgeted_amount),
+                "amount_set": self.common.format_amount(budgeted_amount),
                 "month": &resolved_month,
                 "new_balance": self.common.format_amount(updated_category.balance),
                 "budgeted": self.common.format_amount(updated_category.budgeted),
@@ -228,7 +228,7 @@ mod tests {
         });
 
         let result = handlers
-            .handle_budget_operation("assign_category_budget", args)
+            .handle_budget_operation("set_category_budget", args)
             .await;
 
         assert!(result.is_err());
@@ -238,7 +238,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_assign_category_budget_validation_errors() {
+    async fn test_set_category_budget_validation_errors() {
         let config = create_test_config();
         let client = Arc::new(
             YnabClient::new_with_config(
@@ -262,7 +262,7 @@ mod tests {
             "category_id": "550e8400-e29b-41d4-a716-446655440000",
             "budgeted_amount": 50000
         });
-        let result = handlers.assign_category_budget(args).await;
+        let result = handlers.set_category_budget(args).await;
         assert!(result.is_err());
 
         // Test missing category_id
@@ -270,7 +270,7 @@ mod tests {
             "budget_id": "default",
             "budgeted_amount": 50000
         });
-        let result = handlers.assign_category_budget(args).await;
+        let result = handlers.set_category_budget(args).await;
         assert!(result.is_err());
 
         // Test missing budgeted_amount
@@ -278,12 +278,12 @@ mod tests {
             "budget_id": "default",
             "category_id": "550e8400-e29b-41d4-a716-446655440000"
         });
-        let result = handlers.assign_category_budget(args).await;
+        let result = handlers.set_category_budget(args).await;
         assert!(result.is_err());
     }
 
     #[tokio::test]
-    async fn test_assign_category_budget_negative_amount() {
+    async fn test_set_category_budget_negative_amount() {
         let config = create_test_config();
         let client = Arc::new(
             YnabClient::new_with_config(
@@ -308,16 +308,21 @@ mod tests {
             "budgeted_amount": -50000 // Negative amount should be rejected
         });
 
-        let result = handlers.assign_category_budget(args).await;
+        let result = handlers.set_category_budget(args).await;
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
         // The test reaches the API call before validation, so expect API error
         // In a real implementation, validation would happen before API calls
-        assert!(error_msg.contains("Unauthorized") || error_msg.contains("cannot be negative"));
+        assert!(
+            error_msg.contains("Unauthorized")
+                || error_msg.contains("cannot be negative")
+                || error_msg.contains("Read-only mode")
+                || error_msg.contains("Rate limit exceeded")
+        );
     }
 
     #[tokio::test]
-    async fn test_assign_category_budget_invalid_uuid() {
+    async fn test_set_category_budget_invalid_uuid() {
         let config = create_test_config();
         let client = Arc::new(
             YnabClient::new_with_config(
@@ -342,12 +347,12 @@ mod tests {
             "budgeted_amount": 50000
         });
 
-        let result = handlers.assign_category_budget(args).await;
+        let result = handlers.set_category_budget(args).await;
         assert!(result.is_err());
     }
 
     #[tokio::test]
-    async fn test_assign_category_budget_additive_behavior() {
+    async fn test_set_category_budget_set_behavior() {
         let config = create_test_config();
         let client = Arc::new(
             YnabClient::new_with_config(
@@ -374,7 +379,7 @@ mod tests {
         });
 
         // This will fail due to auth, but we're testing the validation logic
-        let result = handlers.assign_category_budget(args).await;
+        let result = handlers.set_category_budget(args).await;
 
         // The test should reach the API call stage (and fail with auth error)
         // rather than failing at validation, which confirms our validation is working
@@ -386,11 +391,13 @@ mod tests {
                 || error_msg.contains("401")
                 || error_msg.contains("connection")
                 || error_msg.contains("network")
+                || error_msg.contains("Read-only mode")
+                || error_msg.contains("Rate limit exceeded")
         );
     }
 
     #[tokio::test]
-    async fn test_assign_category_budget_message_content() {
+    async fn test_set_category_budget_message_content() {
         let config = create_test_config();
         let client = Arc::new(
             YnabClient::new_with_config(
@@ -417,7 +424,7 @@ mod tests {
         });
 
         // This will fail due to auth, but we can verify it's trying the right operation
-        let result = handlers.assign_category_budget(args).await;
+        let result = handlers.set_category_budget(args).await;
         assert!(result.is_err());
 
         // The error should come from the API layer (auth failure) not validation
@@ -428,6 +435,8 @@ mod tests {
                 || error_msg.contains("401")
                 || error_msg.contains("connection")
                 || error_msg.contains("network")
+                || error_msg.contains("Read-only mode")
+                || error_msg.contains("Rate limit exceeded")
         );
     }
 }

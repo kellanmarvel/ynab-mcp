@@ -360,7 +360,7 @@ This example shows a complete daily expense tracking session.
   "jsonrpc": "2.0",
   "method": "tools/call",
   "params": {
-    "name": "assign_category_budget",
+    "name": "set_category_budget",
     "arguments": {
       "budget_id": "default",
       "category_id": "groceries-uuid",

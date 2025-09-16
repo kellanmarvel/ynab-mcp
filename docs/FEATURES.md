@@ -21,7 +21,7 @@ The server provides 16+ tools covering all major YNAB operations:
 - `create_transfer` - Move money between accounts
 
 #### Budget Management
-- `assign_category_budget` - Allocate money to budget categories
+- `set_category_budget` - Allocate money to budget categories
 
 #### Analysis & Reporting
 - `analyze_transactions` - Comprehensive transaction analysis with filtering

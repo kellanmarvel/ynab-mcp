@@ -60,7 +60,7 @@ impl ToolHandlers {
                     .await
             }
 
-            "assign_category_budget" => {
+            "set_category_budget" => {
                 self.budget_handlers
                     .handle_budget_operation(tool_name, arguments)
                     .await
@@ -152,8 +152,8 @@ impl ToolHandlers {
                     .await
             }
             "create_transfer" => self.transfer_handlers.create_transfer(arguments).await,
-            "assign_category_budget" => {
-                self.budget_handlers.assign_category_budget(arguments).await
+            "set_category_budget" => {
+                self.budget_handlers.set_category_budget(arguments).await
             }
             "analyze_transactions" => self
                 .analysis_handlers
@@ -360,7 +360,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_handle_tool_call_assign_category_budget() {
+    async fn test_handle_tool_call_set_category_budget() {
         let common = create_test_common();
         let handlers = ToolHandlers::new(common.ynab_client.clone(), true);
 
@@ -371,7 +371,7 @@ mod tests {
         });
 
         let result = handlers
-            .handle_tool_call("assign_category_budget", args)
+            .handle_tool_call("set_category_budget", args)
             .await;
         // In read-only mode, write operations should fail
         assert!(result.is_err());
@@ -666,7 +666,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_handle_tool_call_raw_assign_category_budget() {
+    async fn test_handle_tool_call_raw_set_category_budget() {
         let common = create_test_common();
         let handlers = ToolHandlers::new(common.ynab_client.clone(), true);
 
@@ -677,7 +677,7 @@ mod tests {
         });
 
         let result = handlers
-            .handle_tool_call_raw("assign_category_budget", args)
+            .handle_tool_call_raw("set_category_budget", args)
             .await;
         // In read-only mode, write operations should fail
         assert!(result.is_err());

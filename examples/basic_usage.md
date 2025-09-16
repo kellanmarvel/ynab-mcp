@@ -139,7 +139,7 @@ Launch your AI client and start talking to your budget!
 **AI Assistant will:**
 1. Use `generate_spending_report` to analyze previous month
 2. Identify spending patterns and trends
-3. Use `assign_category_budget` to allocate money to categories
+3. Use `set_category_budget` to allocate money to categories
 4. Provide recommendations for budget adjustments
 
 ### Transaction Cleanup

@@ -45,7 +45,7 @@ impl ToolSchemas {
 
     /// Budget management tools
     pub fn get_budget_tools() -> Vec<Value> {
-        vec![Self::assign_category_budget_tool()]
+        vec![Self::set_category_budget_tool()]
     }
 
     /// System management tools
@@ -275,18 +275,18 @@ impl ToolSchemas {
         })
     }
 
-    fn assign_category_budget_tool() -> Value {
+    fn set_category_budget_tool() -> Value {
         json!({
-            "name": "assign_category_budget",
-            "description": "Assign money to a budget category for a specific month",
+            "name": "set_category_budget",
+            "description": "Set a budget category to an exact amount for a specific month",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "budget_id": Self::budget_id_param(),
-                    "category_id": Self::optional_string_param("Category ID to assign budget to"),
+                    "category_id": Self::optional_string_param("Category ID to set budget for"),
                     "budgeted_amount": json!({
                         "type": ["string", "number"],
-                        "description": "Amount to assign (e.g., '50.00' for £50 or 50000 for milliunits)"
+                        "description": "Exact amount to set budget to (e.g., '50.00' for £50 or 50000 for milliunits)"
                     }),
                     "month": Self::optional_string_param("Month in YYYY-MM-DD format (default: current month)")
                 },

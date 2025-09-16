@@ -210,7 +210,7 @@ impl SystemHandlers {
                         "transaction_management": ["create_transaction", "update_transaction", "approve_transaction", "clear_transaction"],
                         "transfer_management": ["create_transfer"],
                         "data_analysis": ["analyze_transactions", "analyze_spending_by_category", "get_transactions_by_date_range", "get_all_account_transactions"],
-                        "budget_management": ["assign_category_budget"],
+                        "budget_management": ["set_category_budget"],
                         "system_management": ["health_check", "cache_management", "get_api_documentation"]
                     },
                     "quick_reference": {
