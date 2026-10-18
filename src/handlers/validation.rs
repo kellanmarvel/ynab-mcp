@@ -216,16 +216,21 @@ impl InputValidator {
     /// Validate budget_id parameter (required for most operations)
     pub fn validate_budget_id(args: &Value) -> Result<String> {
         let budget_id = Self::validate_required_string(args, "budget_id")?;
+        Self::check_budget_id(&budget_id)?;
+        Ok(budget_id)
+    }
 
-        // Allow "default" or valid UUID format
+    /// Check that a budget ID is "default" or a valid UUID.
+    ///
+    /// Budget IDs are interpolated into YNAB API URL paths, so anything else
+    /// (e.g. "x/../..") must be rejected before it reaches the HTTP client.
+    pub fn check_budget_id(budget_id: &str) -> Result<()> {
         if budget_id == "default" {
-            Ok(budget_id)
-        } else {
-            // Validate as UUID
-            Uuid::parse_str(&budget_id)
-                .with_context(|| "Invalid budget_id format, must be 'default' or a valid UUID")?;
-            Ok(budget_id)
+            return Ok(());
         }
+        Uuid::parse_str(budget_id)
+            .with_context(|| "Invalid budget_id format, must be 'default' or a valid UUID")?;
+        Ok(())
     }
 
     /// Validate that required fields are present
@@ -732,5 +737,14 @@ mod tests {
         // Test start of year
         let start_year = json!({"test": "2024-01-01"});
         assert!(InputValidator::validate_date(&start_year, "test").is_ok());
+    }
+
+    #[test]
+    fn test_check_budget_id_rejects_path_segments() {
+        assert!(InputValidator::check_budget_id("default").is_ok());
+        assert!(InputValidator::check_budget_id("550e8400-e29b-41d4-a716-446655440000").is_ok());
+        assert!(InputValidator::check_budget_id("x/../../user").is_err());
+        assert!(InputValidator::check_budget_id("test-budget").is_err());
+        assert!(InputValidator::check_budget_id("").is_err());
     }
 }

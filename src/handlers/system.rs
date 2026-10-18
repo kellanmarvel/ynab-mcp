@@ -573,6 +573,7 @@ impl SystemHandlers {
             .get("budget_id")
             .and_then(|v| v.as_str())
             .unwrap_or("default");
+        crate::handlers::validation::InputValidator::check_budget_id(budget_id)?;
         let months_back = args
             .get("months_back")
             .and_then(|v| v.as_u64())
@@ -644,6 +645,7 @@ impl SystemHandlers {
             .get("budget_id")
             .and_then(|v| v.as_str())
             .unwrap_or("default");
+        crate::handlers::validation::InputValidator::check_budget_id(budget_id)?;
         let category_id = args.get("category_id").and_then(|v| v.as_str());
         let time_period = args
             .get("time_period")
@@ -697,6 +699,7 @@ impl SystemHandlers {
             .get("budget_id")
             .and_then(|v| v.as_str())
             .unwrap_or("default");
+        crate::handlers::validation::InputValidator::check_budget_id(budget_id)?;
 
         let resolved_budget_id = self.common.resolve_budget_id(budget_id).await?;
 

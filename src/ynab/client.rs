@@ -14,6 +14,21 @@ use super::cache::{CacheStats, YnabCache};
 use super::health::HealthStatus;
 use super::models::*;
 
+/// Truncate `s` to at most `max_bytes` bytes without splitting a UTF-8 character.
+///
+/// Slicing a `&str` at an arbitrary byte offset panics on a multi-byte character
+/// (e.g. an accented payee name), and with `panic = "abort"` that kills the server.
+fn truncate_at_char_boundary(s: &str, max_bytes: usize) -> &str {
+    if s.len() <= max_bytes {
+        return s;
+    }
+    let mut end = max_bytes;
+    while !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    &s[..end]
+}
+
 #[derive(Clone)]
 pub struct YnabClient {
     client: Arc<Client>,
@@ -224,7 +239,7 @@ impl YnabClient {
                     let truncated = if response_text.len() > 500 {
                         format!(
                             "{}... (truncated, original length: {} chars)",
-                            &response_text[..500],
+                            truncate_at_char_boundary(&response_text, 500),
                             response_text.len()
                         )
                     } else {
@@ -282,6 +297,10 @@ impl YnabClient {
             endpoint.trim_start_matches('/')
         );
 
+        // A write can change any cached read (lists, balances, the transaction itself),
+        // so drop the whole cache rather than serve stale data afterwards.
+        self.cache.clear();
+
         // POST request to YNAB API
         let response = self
             .client
@@ -325,7 +344,7 @@ impl YnabClient {
             let truncated = if response_text.len() > 500 {
                 format!(
                     "{}... (truncated, original length: {} chars)",
-                    &response_text[..500],
+                    truncate_at_char_boundary(&response_text, 500),
                     response_text.len()
                 )
             } else {
@@ -363,6 +382,9 @@ impl YnabClient {
             self.base_url.trim_end_matches('/'),
             endpoint.trim_start_matches('/')
         );
+
+        // A write can change any cached read, so drop the whole cache (see post()).
+        self.cache.clear();
 
         // PATCH request to YNAB API
         let response = self
@@ -407,7 +429,7 @@ impl YnabClient {
             let truncated = if response_text.len() > 500 {
                 format!(
                     "{}... (truncated, original length: {} chars)",
-                    &response_text[..500],
+                    truncate_at_char_boundary(&response_text, 500),
                     response_text.len()
                 )
             } else {
@@ -487,12 +509,7 @@ impl YnabClient {
     pub async fn get_transactions(&self, budget_id: &str) -> Result<Vec<Transaction>> {
         let endpoint = format!("budgets/{}/transactions", budget_id);
         let response: ApiResponse<TransactionsResponse> = self.get(&endpoint).await?;
-        let mut transactions = response.data.transactions;
-
-        // Fix amount inconsistencies by checking import_id
-        for transaction in &mut transactions {
-            transaction.fix_amount_if_needed();
-        }
+        let transactions = response.data.transactions;
 
         Ok(transactions)
     }
@@ -507,12 +524,7 @@ impl YnabClient {
             budget_id, server_knowledge
         );
         let response: ApiResponse<TransactionsResponse> = self.get(&endpoint).await?;
-        let mut transactions = response.data.transactions;
-
-        // Fix amount inconsistencies by checking import_id
-        for transaction in &mut transactions {
-            transaction.fix_amount_if_needed();
-        }
+        let transactions = response.data.transactions;
 
         Ok((transactions, response.data.server_knowledge))
     }
@@ -527,12 +539,7 @@ impl YnabClient {
             budget_id, since_date
         );
         let response: ApiResponse<TransactionsResponse> = self.get(&endpoint).await?;
-        let mut transactions = response.data.transactions;
-
-        // Fix amount inconsistencies by checking import_id
-        for transaction in &mut transactions {
-            transaction.fix_amount_if_needed();
-        }
+        let transactions = response.data.transactions;
 
         Ok(transactions)
     }
@@ -647,12 +654,7 @@ impl YnabClient {
     ) -> Result<Vec<Transaction>> {
         let endpoint = format!("budgets/{}/accounts/{}/transactions", budget_id, account_id);
         let response: ApiResponse<TransactionsResponse> = self.get(&endpoint).await?;
-        let mut transactions = response.data.transactions;
-
-        // Fix amount inconsistencies by checking import_id
-        for transaction in &mut transactions {
-            transaction.fix_amount_if_needed();
-        }
+        let transactions = response.data.transactions;
 
         Ok(transactions)
     }
@@ -667,12 +669,7 @@ impl YnabClient {
             budget_id, category_id
         );
         let response: ApiResponse<TransactionsResponse> = self.get(&endpoint).await?;
-        let mut transactions = response.data.transactions;
-
-        // Fix amount inconsistencies by checking import_id
-        for transaction in &mut transactions {
-            transaction.fix_amount_if_needed();
-        }
+        let transactions = response.data.transactions;
 
         Ok(transactions)
     }
@@ -683,6 +680,10 @@ impl YnabClient {
         transaction_id: Uuid,
     ) -> Result<Transaction> {
         let endpoint = format!("budgets/{}/transactions/{}", budget_id, transaction_id);
+        // Always fetch fresh: approve/clear/update rebuild the full transaction from
+        // this result and send it back, so a cached copy could overwrite edits made
+        // in the YNAB app since it was cached.
+        self.cache.remove(&format!("GET:{}", endpoint));
         let response: ApiResponse<TransactionResponse> = self.get(&endpoint).await?;
         Ok(response.data.transaction)
     }
@@ -888,6 +889,17 @@ impl std::fmt::Debug for YnabClient {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_truncate_at_char_boundary() {
+        assert_eq!(truncate_at_char_boundary("short", 500), "short");
+        assert_eq!(truncate_at_char_boundary("abcdef", 3), "abc");
+        // "é" is two bytes; cutting at byte 2 would split it.
+        let s = "aé"; // bytes: 'a' (1) + 'é' (2)
+        assert_eq!(truncate_at_char_boundary(s, 2), "a");
+        let long = "é".repeat(400); // 800 bytes, every odd offset is mid-char
+        assert_eq!(truncate_at_char_boundary(&long, 501).len(), 500);
+    }
     use crate::ynab::models::{AccountType, ClearState, TransactionDetail};
     use serde_json::json;
     use wiremock::{

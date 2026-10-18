@@ -21,6 +21,7 @@ impl<'a> BulkTransactionHandler<'a> {
             .get("budget_id")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("Missing budget_id"))?;
+        crate::handlers::validation::InputValidator::check_budget_id(budget_id)?;
 
         let resolved_budget_id = self.common.resolve_budget_id(budget_id).await?;
 
@@ -300,7 +301,7 @@ mod tests {
         let handler = BulkTransactionHandler::new(&common);
 
         let invalid_args = json!({
-            "budget_id": "test-budget"
+            "budget_id": "11111111-1111-1111-1111-111111111111"
         });
         let result = handler.create_transactions_bulk(invalid_args).await;
         assert!(result.is_err());
@@ -316,7 +317,7 @@ mod tests {
         let handler = BulkTransactionHandler::new(&common);
 
         let args = json!({
-            "budget_id": "test-budget",
+            "budget_id": "11111111-1111-1111-1111-111111111111",
             "transactions": []
         });
         let result = handler.create_transactions_bulk(args).await;
@@ -342,7 +343,7 @@ mod tests {
         }
 
         let args = json!({
-            "budget_id": "test-budget",
+            "budget_id": "11111111-1111-1111-1111-111111111111",
             "transactions": transactions
         });
         let result = handler.create_transactions_bulk(args).await;
@@ -359,7 +360,7 @@ mod tests {
         let handler = BulkTransactionHandler::new(&common);
 
         let args = json!({
-            "budget_id": "test-budget",
+            "budget_id": "11111111-1111-1111-1111-111111111111",
             "transactions": [
                 {
                     "invalid": "transaction"
@@ -377,7 +378,7 @@ mod tests {
         let handler = BulkTransactionHandler::new(&common);
 
         let args = json!({
-            "budget_id": "test-budget",
+            "budget_id": "11111111-1111-1111-1111-111111111111",
             "transactions": [
                 {
                     "account_id": Uuid::new_v4().to_string(),

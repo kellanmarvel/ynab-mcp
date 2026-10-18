@@ -1,5 +1,5 @@
 # Multi-stage build for optimal image size
-FROM rust:1.82-alpine AS builder
+FROM rust:1.90-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -28,7 +28,7 @@ COPY tests ./tests
 RUN cargo build --release
 
 # Runtime stage with minimal Alpine image
-FROM alpine:3.18
+FROM alpine:3.22
 
 # Install runtime dependencies
 RUN apk add --no-cache \
@@ -52,9 +52,8 @@ RUN chmod +x /usr/local/bin/ynab-mcp
 # Switch to non-root user
 USER ynab
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"health_check","arguments":{}}}' | ynab-mcp > /dev/null || exit 1
+# No HEALTHCHECK: each probe would start the binary, which calls the YNAB API on
+# startup, using ~120 of the 200 requests/hour YNAB allows per token.
 
 # Set environment variables with defaults
 ENV RUST_LOG=info

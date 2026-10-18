@@ -341,30 +341,6 @@ pub struct SubTransaction {
     pub deleted: bool,
 }
 
-impl Transaction {
-    /// Fix amount inconsistencies by checking the import_id for the correct amount
-    pub fn fix_amount_if_needed(&mut self) {
-        if let Some(import_id) = &self.import_id {
-            // Parse import_id format: "YNAB:{amount}:{date}:{sequence}"
-            let parts: Vec<&str> = import_id.split(':').collect();
-            if parts.len() >= 2 && parts[0] == "YNAB" {
-                if let Ok(expected_milliunits) = parts[1].parse::<i64>() {
-                    // Check if the current amount seems wrong (too small compared to import_id)
-                    let current_abs = self.amount.abs();
-                    let expected_abs = expected_milliunits.abs();
-
-                    // If the expected amount is significantly larger, assume API returned wrong format
-                    if expected_abs >= 1000 && current_abs < 100 {
-                        // Likely the API returned currency units instead of milliunits
-                        // Use the import_id amount as the source of truth
-                        self.amount = expected_milliunits;
-                    }
-                }
-            }
-        }
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScheduledTransaction {
     pub id: Uuid,

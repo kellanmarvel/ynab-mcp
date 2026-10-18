@@ -43,13 +43,8 @@ services:
     stdin_open: true
     tty: true
     
-    # Health check
-    healthcheck:
-      test: ["CMD-SHELL", "echo '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"health_check\",\"arguments\":{}}}' | ynab-mcp > /dev/null"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 5s
+    # No healthcheck: each probe starts the binary, which calls the YNAB API on
+    # startup. Every 30s that is ~120 of the 200 requests/hour YNAB allows per token.
 
   # Optional: Development service with volume mounts
   ynab-mcp-dev:

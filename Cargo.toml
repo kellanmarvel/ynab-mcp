@@ -54,8 +54,8 @@ assert_matches = "1.5"
 tempfile = "3.8"
 serial_test = "3.0"
 
-# Code coverage
-cargo-tarpaulin = "0.31"
+# Code coverage: cargo-tarpaulin is a cargo subcommand, installed in CI with
+# `cargo install cargo-tarpaulin`. It is not a library dependency.
 
 # Optimization profiles for smaller binary size
 [profile.release]

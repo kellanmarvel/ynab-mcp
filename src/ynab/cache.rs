@@ -108,6 +108,14 @@ impl YnabCache {
         debug!(cache_key = key, ttl_secs = ttl.as_secs(), "Data cached");
     }
 
+    pub fn remove(&self, key: &str) {
+        if self.cache.remove(key).is_some() {
+            if let Ok(mut stats) = self.stats.write() {
+                stats.cache_size = self.cache.len();
+            }
+        }
+    }
+
     pub fn clear(&self) {
         self.cache.clear();
 

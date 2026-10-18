@@ -52,6 +52,7 @@ impl AnalysisHandlers {
             .get("budget_id")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("budget_id is required"))?;
+        crate::handlers::validation::InputValidator::check_budget_id(budget_id)?;
 
         let resolved_budget_id = self.common.resolve_budget_id(budget_id).await?;
 
@@ -248,6 +249,7 @@ impl AnalysisHandlers {
             .get("budget_id")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("budget_id is required"))?;
+        crate::handlers::validation::InputValidator::check_budget_id(budget_id)?;
 
         let resolved_budget_id = self.common.resolve_budget_id(budget_id).await?;
 
@@ -338,6 +340,7 @@ impl AnalysisHandlers {
             .get("budget_id")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("budget_id is required"))?;
+        crate::handlers::validation::InputValidator::check_budget_id(budget_id)?;
 
         let resolved_budget_id = self.common.resolve_budget_id(budget_id).await?;
 
@@ -437,6 +440,7 @@ impl AnalysisHandlers {
             .get("budget_id")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("budget_id is required"))?;
+        crate::handlers::validation::InputValidator::check_budget_id(budget_id)?;
 
         let resolved_budget_id = self.common.resolve_budget_id(budget_id).await?;
 
@@ -480,6 +484,7 @@ impl AnalysisHandlers {
             .get("budget_id")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("budget_id is required"))?;
+        crate::handlers::validation::InputValidator::check_budget_id(budget_id)?;
 
         let resolved_budget_id = self.common.resolve_budget_id(budget_id).await?;
 
@@ -517,6 +522,7 @@ impl AnalysisHandlers {
             .get("budget_id")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("budget_id is required"))?;
+        crate::handlers::validation::InputValidator::check_budget_id(budget_id)?;
 
         let resolved_budget_id = self.common.resolve_budget_id(budget_id).await?;
 
@@ -557,6 +563,7 @@ impl AnalysisHandlers {
             .get("budget_id")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("budget_id is required"))?;
+        crate::handlers::validation::InputValidator::check_budget_id(budget_id)?;
 
         let resolved_budget_id = self.common.resolve_budget_id(budget_id).await?;
 
@@ -606,6 +613,7 @@ impl AnalysisHandlers {
             .get("budget_id")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("budget_id is required"))?;
+        crate::handlers::validation::InputValidator::check_budget_id(budget_id)?;
 
         let resolved_budget_id = self.common.resolve_budget_id(budget_id).await?;
 
